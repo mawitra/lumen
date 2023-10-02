@@ -115,7 +115,8 @@ class AuthController extends Controller
     protected function respondWithToken($token)
     {
         $expiresInMinutes = 5;
-        $expiresAt = Carbon::now()->addMinutes($expiresInMinutes);
+        $expiresAt = Carbon::now()->addMinutes($expiresInMinutes)->format('Y-m-d H:i:s');
+        
 
         return response()->json([
             'access_token' => $token,
@@ -123,4 +124,4 @@ class AuthController extends Controller
             'expires_at' => $expiresAt,
         ]);
     }
-}
+}      
