@@ -9,6 +9,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
 {
@@ -29,19 +30,20 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
-        //validate incoming request
+        // Validate incoming request
         $this->validate($request, [
             'username' => 'required|string',
             'password' => 'required|string',
         ]);
 
         $credentials = $request->only(['username', 'password']);
-
-        if (!$token = Auth::attempt($credentials)) {
+        if (!$token = JWTAuth::attempt($credentials)) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
+        // Jika otentikasi berhasil, Anda dapat memberikan respons yang sesuai tanpa menghasilkan token JWT
         return $this->respondWithToken($token);
     }
+
 
 
     public function register(Request $request)
@@ -104,24 +106,19 @@ class AuthController extends Controller
 
         return response()->json(['message' => 'Token not found'], 401);
     }
-
-    /**
-     * Get the token array structure.
-     *
-     * @param  string $token
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
     protected function respondWithToken($token)
     {
-        $expiresInMinutes = 5;
-        $expiresAt = Carbon::now()->addMinutes($expiresInMinutes)->format('Y-m-d H:i:s');
-        
+
+        // Mendapatkan waktu saat ini
+        $currentTime = Carbon::now();
+
+        // Menambahkan 5 menit ke waktu saat ini
+        $expiresAt = $currentTime->addMinutes(5);
 
         return response()->json([
             'access_token' => $token,
             'token_type' => 'bearer',
-            'expires_at' => $expiresAt,
+            'expires_at' => $expiresAt->toDateTimeString(), // Menggunakan waktu kadaluwarsa yang telah dihitung
         ]);
     }
 }      
