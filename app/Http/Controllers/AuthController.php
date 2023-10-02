@@ -29,7 +29,7 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
-          //validate incoming request 
+        //validate incoming request
         $this->validate($request, [
             'username' => 'required|string',
             'password' => 'required|string',
@@ -37,14 +37,15 @@ class AuthController extends Controller
 
         $credentials = $request->only(['username', 'password']);
 
-        if (! $token = Auth::attempt($credentials)) {			
+        if (!$token = Auth::attempt($credentials)) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
         return $this->respondWithToken($token);
     }
 
 
-    public function register(Request $request){
+    public function register(Request $request)
+    {
         $this->validate($request, [
             'username' => 'required|unique:users',
             'password' => 'required',
@@ -57,10 +58,12 @@ class AuthController extends Controller
 
         // $data= User::created(['username'=> $username, 'password'=> $password]);
         $query = "INSERT INTO users (username, password, created_at, updated_at) VALUES (?, ?,?,?)";
-       $data= DB::insert($query, [$username, $password, $timesTamps, $timesTamps]);
+        $data = DB::insert($query, [$username, $password, $timesTamps, $timesTamps]);
 
-        return response()->json(['status_code'=> 201,'data' => $data,
-        'message' => 'Akun berhasil ditambahkan']);
+        return response()->json([
+            'status_code' => 201, 'data' => $data,
+            'message' => 'Akun berhasil ditambahkan'
+        ]);
     }
     /**
      * Get the authenticated User.
@@ -91,7 +94,15 @@ class AuthController extends Controller
      */
     public function refresh()
     {
-        return $this->respondWithToken(auth()->refresh());
+        $user = Auth::user();
+        $oauthToken = $user->tokens->where('revoked', false)->first();
+
+        if ($oauthToken) {
+            $newToken = $oauthToken->refresh();
+            return $this->respondWithToken($newToken);
+        }
+
+        return response()->json(['message' => 'Token not found'], 401);
     }
 
     /**
@@ -103,10 +114,13 @@ class AuthController extends Controller
      */
     protected function respondWithToken($token)
     {
+        $expiresInMinutes = 5;
+        $expiresAt = Carbon::now()->addMinutes($expiresInMinutes);
+
         return response()->json([
             'access_token' => $token,
             'token_type' => 'bearer',
-            'expires_in' => auth()->factory()->getTTL() * 60
+            'expires_at' => $expiresAt,
         ]);
     }
 }
